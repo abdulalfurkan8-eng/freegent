@@ -1,2 +1,0 @@
-export interface BenchmarkMetrics { taskSuccess:number; firstAttemptSuccess:number; recoverySuccess:number; wrongActionRate:number; verificationAccuracy:number; actionsPerTask:number; durationMs:number; contextTokens:number; screenshots:number; }
-export function scoreBenchmark(m: BenchmarkMetrics): number { return Math.max(0, Math.min(100, 30*m.taskSuccess+15*m.firstAttemptSuccess+15*m.recoverySuccess+15*m.verificationAccuracy+10*(1-m.wrongActionRate)+5*(1-Math.min(1,m.actionsPerTask/30))+5*(1-Math.min(1,m.screenshots/30))+5*(1-Math.min(1,m.contextTokens/20000)))); }
