@@ -1,31 +1,31 @@
 # FreeGent
 
-Autonomous AI coding and Windows computer-control agent, driven by DeepSeek or Gemini through browser automation (no paid API key required â€” it drives the actual web chat UI).
+Autonomous AI coding and Windows computer-control agent, driven by DeepSeek or Gemini through browser automation (no paid API key required - it drives the actual web chat UI).
 
 ```
-â•­â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â•®
-â”‚  * FreeGent v7.4.19                                          â”‚
-â”‚  Free AI coding agent - creative, autonomous, and verified   â”‚
-â•°â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â•¯
+╭─────────────────────────────────────────────────────────────╮
+│  * FreeGent v1.0.0                                          │
+│  Free AI coding agent - creative, autonomous, and verified  │
+╰─────────────────────────────────────────────────────────────╯
 ```
 
 ## What it does
 
-FreeGent runs an agent loop against DeepSeek's or Gemini's web chat (via a persistent Playwright browser profile), giving it tools to read/write files, run terminal commands, browse and test pages, control the Windows desktop (screenshots, clicks, keyboard), and remember facts across sessions â€” all through natural-language tasks from your terminal.
+FreeGent runs an agent loop against DeepSeek's or Gemini's web chat (via a persistent Playwright browser profile), giving it tools to read/write files, run terminal commands, browse and test pages, control the Windows desktop (screenshots, clicks, keyboard), and remember facts across sessions - all through natural-language tasks from your terminal.
 
 - **Interactive REPL** or one-shot `-p` mode for scripts/CI
-- **Auto-recovering browser session** â€” a stalled or frozen chat tab reloads itself and resumes instead of dying
-- **Persistent, cross-session memory** â€” project facts, learned strategies, and full chat history
-- **Custom skills** â€” describe an idea once, get a reusable expert workflow available as its own `/<name>` command
-- **Custom MCP tool packs** â€” 10 built-in packs (browser, filesystem, github, sqlite, etc.) plus AI-built custom ones
-- **App Library** â€” learns app-specific workflows for GUI/desktop automation tasks
-- **Auto-named chats** â€” the AI titles a new chat from your first message; `/rename` still overrides anytime
-- **Session resume, fork, and compact** â€” pick up old chats, branch a conversation, or summarize-and-continue when a chat gets long
+- **Auto-recovering browser session** - a stalled or frozen chat tab reloads itself and resumes instead of dying
+- **Persistent, cross-session memory** - project facts, learned strategies, and full chat history
+- **Custom skills** - describe an idea once, get a reusable expert workflow available as its own `/<name>` command
+- **Custom MCP tool packs** - 10 built-in packs (browser, filesystem, github, sqlite, etc.) plus AI-built custom ones
+- **App Library** - learns app-specific workflows for GUI/desktop automation tasks
+- **Auto-named chats** - the AI titles a new chat from your first message; `/rename` still overrides anytime
+- **Session resume, fork, and compact** - pick up old chats, branch a conversation, or summarize-and-continue when a chat gets long
 
 ## Requirements
 
-- Windows, Node.js â‰¥ 20
-- A DeepSeek or Gemini account (no API key â€” it logs into the actual web chat)
+- Windows, Node.js >= 20
+- A DeepSeek or Gemini account (no API key - it logs into the actual web chat)
 
 ## Install
 
@@ -58,14 +58,14 @@ freegent -p "fix the failing test" --json
 |---|---|
 | `/help` | Show the in-app help |
 | `/clear` | Start a brand-new chat (context reset) |
-| `/resume [n\|name]` | List or reconnect to a saved chat |
+| `/resume [n|name]` | List or reconnect to a saved chat |
 | `/rename <name>` | Rename this session |
 | `/research <query>` | Deep research pass to gather context |
 | `/skill` / `/skill <idea>` | List, or create, a custom expert skill |
 | `/skill update <name> <changes>` | Refine an existing skill |
 | `/skill delete <name>` | Delete a skill |
 | `/mcp` / `/mcp <idea>` | List MCP tool packs, or build a custom one |
-| `/mcp enable\|disable\|delete <name>` | Manage a pack |
+| `/mcp enable|disable|delete <name>` | Manage a pack |
 | `/image <path>` / `/paste` | Attach an image to your next message |
 | `/fork [name]` | Branch the conversation into a new chat |
 | `/rewind [n]` | Undo the last n file changes |
