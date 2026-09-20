@@ -26,14 +26,14 @@ export async function openSession(
     const browser = await chromium.connectOverCDP(cdp, { timeout: 20_000 });
     const ctx = browser.contexts()[0] ?? (await browser.newContext());
     const findTab = (): Page | undefined =>
-      ctx.pages().find((p) => p.url().includes('deepseek') || p.url().includes('gemini.google.com'));
+      ctx.pages().find((p) => p.url().includes('deepseek'));
     let page = findTab();
     for (let i = 0; i < 30 && !page; i++) {
       await new Promise((r) => setTimeout(r, 500));
       page = findTab();
     }
     if (!page) throw new Error('Provider tab not found in the app browser');
-    const targetUrl = config.provider === 'gemini' ? config.geminiUrl : config.chatUrl;
+    const targetUrl = config.chatUrl;
     if (!page.url().startsWith(targetUrl)) {
       await page.goto(targetUrl, { waitUntil: 'domcontentloaded' })
         .catch(() => { /* login redirects are fine */ });
@@ -112,7 +112,7 @@ export async function openSession(
 
   const page = context.pages()[0] ?? (await context.newPage());
   await page.bringToFront();
-  const targetUrl = config.provider === 'gemini' ? config.geminiUrl : config.chatUrl;
+  const targetUrl = config.chatUrl;
   await page.goto(targetUrl, { waitUntil: 'domcontentloaded' });
 
   return {

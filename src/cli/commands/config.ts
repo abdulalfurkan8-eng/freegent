@@ -13,10 +13,10 @@ export async function configCommand(
   }
 
   if (!value) {
-    throw new Error('Config value is required. Example: freegent config provider gemini');
+    throw new Error('Config value is required. Example: freegent config headless false');
   }
-  if (key === 'provider' && value !== 'deepseek' && value !== 'gemini') {
-    throw new Error('provider must be deepseek or gemini');
+  if (key === 'provider' && value !== 'deepseek') {
+    throw new Error('provider must be deepseek (the only supported provider)');
   }
   const parsed: unknown =
     value === 'true' ? true : value === 'false' ? false : Number.isFinite(Number(value)) ? Number(value) : value;

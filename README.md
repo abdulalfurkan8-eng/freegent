@@ -1,6 +1,6 @@
 # FreeGent
 
-Autonomous AI coding and Windows computer-control agent, driven by DeepSeek or Gemini through browser automation (no paid API key required - it drives the actual web chat UI).
+Autonomous AI coding and Windows computer-control agent, driven by DeepSeek through browser automation (no paid API key required - it drives the actual web chat UI).
 
 ```
 ╭─────────────────────────────────────────────────────────────╮
@@ -11,7 +11,7 @@ Autonomous AI coding and Windows computer-control agent, driven by DeepSeek or G
 
 ## What it does
 
-FreeGent runs an agent loop against DeepSeek's or Gemini's web chat (via a persistent Playwright browser profile), giving it tools to read/write files, run terminal commands, browse and test pages, control the Windows desktop (screenshots, clicks, keyboard), and remember facts across sessions - all through natural-language tasks from your terminal.
+FreeGent runs an agent loop against DeepSeek's web chat (via a persistent Playwright browser profile), giving it tools to read/write files, run terminal commands, browse and test pages, control the Windows desktop (screenshots, clicks, keyboard), and remember facts across sessions - all through natural-language tasks from your terminal.
 
 - **Interactive REPL** or one-shot `-p` mode for scripts/CI
 - **Auto-recovering browser session** - a stalled or frozen chat tab reloads itself and resumes instead of dying
@@ -25,7 +25,7 @@ FreeGent runs an agent loop against DeepSeek's or Gemini's web chat (via a persi
 ## Requirements
 
 - Windows, Node.js >= 20
-- A DeepSeek or Gemini account (no API key - it logs into the actual web chat)
+- A DeepSeek account (no API key - it logs into the actual web chat)
 
 ## Install
 
@@ -41,7 +41,7 @@ This installs the `freegent` command globally, linked to this project folder.
 
 ```powershell
 freegent init      # sets up ~/.freegent
-freegent login      # opens a browser once to log into DeepSeek or Gemini
+freegent login      # opens a browser once to log into DeepSeek
 freegent            # starts the interactive REPL
 ```
 

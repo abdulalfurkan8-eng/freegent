@@ -23,8 +23,7 @@ export async function doctorCommand(): Promise<void> {
   logger.info(`Profile dir: ${await exists(PROFILE_DIR) ? 'present' : 'missing'}`);
   logger.info(`Provider: ${config.provider}`);
   logger.info(`DeepSeek URL: ${config.chatUrl}`);
-  logger.info(`Gemini URL: ${config.geminiUrl}`);
-  logger.info(`Gemini mode: browser/web (no API key)`);
+
   logger.info(`Headless: ${String(config.headless)}`);
   logger.info(`Max iterations: ${String(config.maxIterations)}`);
 

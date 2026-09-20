@@ -35,8 +35,7 @@ import { AgentRuntime } from './runtime.js';
 import { appendTaskJournal } from './journal.js';
 import { strategyPrompt } from './strategy.js';
 import { DEFAULTS } from '../config/defaults.js';
-import { BrowserLLMProvider, BrowserGeminiLLMProvider, type LLMProvider } from './provider.js';
-import * as GeminiBrowser from '../browser/gemini.js';
+import { BrowserLLMProvider, type LLMProvider } from './provider.js';
 import { recordStrategyOutcome, learnedStrategy } from './learning.js';
 import { buildRelevantContext } from './context.js';
 import { metric } from './observability.js';
@@ -99,16 +98,6 @@ export class AgentSession {
     if (process.platform === 'win32') await ensureComputerRuntime().catch((err) => logger.warn(`Windows computer-control runtime unavailable: ${(err as Error).message}`));
     this.config = await loadConfig();
     if (process.platform === 'win32') await overlayStart().catch(() => undefined);
-
-    if (this.config.provider === 'gemini') {
-      this.browser = await openSession(this.config, false);
-      this.llmProvider = new BrowserGeminiLLMProvider(this.browser.page, this.config.responseIdleMs, this.config.responseTimeoutMs);
-      const { ensureLoggedIn: ensureGeminiLoggedIn, startNewChat: startGeminiNewChat } = await import('../browser/gemini.js');
-      await ensureGeminiLoggedIn(this.browser.page);
-      await startGeminiNewChat(this.browser.page);
-      logger.info('Connected to Gemini web');
-      return;
-    }
 
     if (shared) {
       // Parallel chat lane: reuse the logged-in browser, own tab own chat.
@@ -175,13 +164,7 @@ export class AgentSession {
     if (this.sessionName !== 'untitled') return this.sessionName;
     let title = '';
     try {
-      if (this.config.provider === 'gemini' && this.llmProvider) {
-        const raw = await this.llmProvider.send(
-          'Give a short 2-4 word name for a coding chat about the task below. Reply with ONLY the name - no quotes, no period.\n\nTask: ' + task.slice(0, 400),
-        );
-        const lines = raw.trim().split('\n').map((l) => l.trim()).filter(Boolean);
-        title = (lines.pop() ?? '').replace(/["'.`*#]/g, '').trim().slice(0, 36);
-      } else if (this.browser) {
+      if (this.browser) {
         const raw = await askOnNewTab(this.browser, this.config,
           'Give a short 2-4 word name for a coding chat about the task ' +
           'below. Reply with ONLY the name - no quotes, no period.\n\n' +
@@ -199,25 +182,13 @@ export class AgentSession {
 
   async resume(target: ChatSession): Promise<void> {
     if (!this.browser) throw new Error('Session not started');
-    if (this.config.provider === 'gemini') await GeminiBrowser.openChatByUrl(this.browser.page, target.url);
-    else await openChatByUrl(this.browser.page, target.url);
+    await openChatByUrl(this.browser.page, target.url);
     this.sessionId = target.id;
     this.sessionName = target.name;
     this.contextSent = true;
   }
 
   async newChat(): Promise<void> {
-    if (this.config.provider === 'gemini') {
-      if (!this.browser) throw new Error('Session not started');
-      const { startNewChat: startGeminiNewChat } = await import('../browser/gemini.js');
-      await startGeminiNewChat(this.browser.page);
-      this.llmProvider = new BrowserGeminiLLMProvider(this.browser.page, this.config.responseIdleMs, this.config.responseTimeoutMs);
-      this.sessionId = `s-${Date.now().toString(36)}`;
-      this.sessionName = 'untitled';
-      this.contextSent = false;
-      this.forkRecap = '';
-      return;
-    }
     if (!this.browser) throw new Error('Session not started');
     await this.saveSession();
     await startNewChat(this.browser.page, this.config.chatUrl);
@@ -256,8 +227,7 @@ export class AgentSession {
     const history = await loadMemory();
     const recap = history.slice(-20)
       .map((m) => `[${m.role}] ${m.content.slice(0, 300)}`).join('\n').slice(-4000);
-    if (this.config.provider === 'gemini') await GeminiBrowser.startNewChat(this.browser.page);
-    else await startNewChat(this.browser.page, this.config.chatUrl);
+    await startNewChat(this.browser.page, this.config.chatUrl);
       if (isTermux()) await enableFeatureToggles(this.browser.page).catch(() => undefined);
     this.sessionId = `s-${Date.now().toString(36)}`;
     this.sessionName = name ?? `${this.sessionName}-fork`;
@@ -271,17 +241,15 @@ export class AgentSession {
     const prevUrl = currentChatUrl(page);
     const prevContextSent = this.contextSent;
     this.sideMode = true;
-    if (this.config.provider === 'gemini') await GeminiBrowser.startNewChat(page);
-    else await startNewChat(page, this.config.chatUrl);
-    if (isTermux() && this.config.provider !== 'gemini') await enableFeatureToggles(page).catch(() => undefined);
+    await startNewChat(page, this.config.chatUrl);
+    if (isTermux()) await enableFeatureToggles(page).catch(() => undefined);
     this.contextSent = false;
     try {
       return await this.runTask(`[Side task - self-contained] ${task}`);
     } finally {
       this.sideMode = false;
       this.contextSent = prevContextSent;
-      if (this.config.provider === 'gemini') await GeminiBrowser.openChatByUrl(page, prevUrl);
-      else await openChatByUrl(page, prevUrl);
+      await openChatByUrl(page, prevUrl);
     }
   }
 
@@ -303,10 +271,6 @@ export class AgentSession {
 
   /** One prompt, one reply, own tab. No tools - used for planning. */
   async askOnce(prompt: string): Promise<string> {
-    if (this.config.provider === 'gemini') {
-      if (!this.llmProvider) throw new Error('Session not started');
-      return this.llmProvider.send(prompt, this.abort?.signal);
-    }
     if (!this.browser) throw new Error('Session not started');
     return askOnNewTab(this.browser, this.config, prompt, this.abort?.signal);
   }
@@ -316,10 +280,9 @@ export class AgentSession {
 
   /** Run one task to completion inside the persistent chat. */
   async runTask(task: string): Promise<string> {
-    const isGemini = this.config.provider === 'gemini';
     const computerControlOnly = /(?:mouse\s*(?:and|&)\s*keyboard|keyboard\s*(?:and|&)\s*mouse|computer\s*control|do\s*not\s*use\s*(?:a\s*)?script|don't\s*use\s*(?:a\s*)?script|no\s*(?:app(?:lication)?\s*)?script)/i.test(task);
     if (!this.llmProvider) throw new Error('Session not started');
-    if (!isGemini && !this.browser) throw new Error('Session not started');
+    if (!this.browser) throw new Error('Session not started');
     const page = this.browser?.page;
     this.stats.tasks++;
     // Every user prompt starts a fresh live checklist. The previous task's
@@ -425,24 +388,19 @@ export class AgentSession {
       discardStdin: false,
     }).start();
     registerActiveSpinner(spinner);
-    let snapshot: Awaited<ReturnType<typeof snapshotAssistant>> | null = isGemini ? null : await snapshotAssistant(page!);
-    let pendingReply: string | null = null;
+    let snapshot: Awaited<ReturnType<typeof snapshotAssistant>> | null = await snapshotAssistant(page!);
     const sendNextModelMessage = async (message: string, images: string[] = [], countTokens = true): Promise<void> => {
-      if (isGemini) {
-        pendingReply = await this.llmProvider!.send(message, signal, images);
-      } else {
-        for (const image of images) await attachFile(page!, image);
+      for (const image of images) await attachFile(page!, image);
+      snapshot = await snapshotAssistant(page!);
+      try {
+        await sendPrompt(page!, message);
+      } catch (err) {
+        // Composer stayed wedged even after sendPrompt's own internal
+        // reload+retry. One page-level recovery attempt before giving up.
+        const healed = await recoverStuckPage(page!);
+        if (!healed) throw err;
         snapshot = await snapshotAssistant(page!);
-        try {
-          await sendPrompt(page!, message);
-        } catch (err) {
-          // Composer stayed wedged even after sendPrompt's own internal
-          // reload+retry. One page-level recovery attempt before giving up.
-          const healed = await recoverStuckPage(page!);
-          if (!healed) throw err;
-          snapshot = await snapshotAssistant(page!);
-          await sendPrompt(page!, message);
-        }
+        await sendPrompt(page!, message);
       }
       // The huge injected system/context prompt is not real "conversation"
       // content, so it must never inflate the token counter. Callers that
@@ -508,15 +466,10 @@ export class AgentSession {
         }, 1000);
         let reply: string;
         try {
-          if (isGemini) {
-            reply = pendingReply ?? await this.llmProvider!.send('Continue with your next tool call.', signal);
-            pendingReply = null;
-          } else {
-            reply = await waitForCompleteResponse(
-              page!, this.config.responseIdleMs, this.config.responseTimeoutMs, snapshot!, signal,
-              (chars) => { liveReplyChars = chars; },
-            );
-          }
+          reply = await waitForCompleteResponse(
+            page!, this.config.responseIdleMs, this.config.responseTimeoutMs, snapshot!, signal,
+            (chars) => { liveReplyChars = chars; },
+          );
           const classification = /TASK_CLASSIFICATION:\s*(visual|nonvisual)/i.exec(reply)?.[1]?.toLowerCase();
           if (classification === 'visual' || classification === 'nonvisual') guards.setTaskClassification(classification);
           this.trackTokens(reply);
@@ -529,7 +482,7 @@ export class AgentSession {
             await sendNextModelMessage('Continue with your next tool call.');
             continue;
           }
-          if (!isGemini && !signal.aborted && !recoveredOnce) {
+          if (!signal.aborted && !recoveredOnce) {
             recoveredOnce = true;
             spinner.text = 'Connection stalled - reloading DeepSeek tab...';
             const healed = await recoverStuckPage(page!);
@@ -652,7 +605,7 @@ export class AgentSession {
           }
           // Run skeptic review: independent agent looks for flaws in changed files
           try {
-            const findings = isGemini ? [] : await runSkepticReview(guards.changedThisTask, this.browser!);
+            const findings = await runSkepticReview(guards.changedThisTask, this.browser!);
             const errors = findings.filter((f) => f.severity === 'error');
             if (errors.length > 0) {
               const issueList = errors.map((f) => `  - ${f.suggestion}`).join('\n');

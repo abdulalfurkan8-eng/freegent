@@ -6,9 +6,6 @@ import type { FreegentConfig } from '../config/config.js';
 import {
   sendPrompt as sendDeepSeekPrompt, waitForCompleteResponse as waitDeepSeekResponse, snapshotAssistant as snapshotDeepSeek, startNewChat as startDeepSeekChat,
 } from '../browser/deepseek.js';
-import {
-  sendPrompt as sendGeminiPrompt, waitForCompleteResponse as waitGeminiResponse, snapshotAssistant as snapshotGemini, startNewChat as startGeminiChat,
-} from '../browser/gemini.js';
 import { buildSystemPrompt } from '../prompts/system.js';
 import { buildProjectContext } from '../memory/context.js';
 import { executeTool } from '../tools/registry.js';
@@ -57,15 +54,10 @@ export async function runOnNewTab(
   let steps = 0;
 
   try {
-    const gemini = config.provider === 'gemini';
-    const startChat = gemini ? () => startGeminiChat(page) : () => startDeepSeekChat(page, config.chatUrl);
-    const send = gemini
-      ? (text: string) => sendGeminiPrompt(page, text)
-      : (text: string) => sendDeepSeekPrompt(page, text);
-    const snapshotFn = gemini ? () => snapshotGemini(page) : () => snapshotDeepSeek(page);
-    const waitFn = gemini
-      ? (before: Awaited<ReturnType<typeof snapshotGemini>>) => waitGeminiResponse(page, config.responseIdleMs, config.responseTimeoutMs, before, signal)
-      : (before: Awaited<ReturnType<typeof snapshotDeepSeek>>) => waitDeepSeekResponse(page, config.responseIdleMs, config.responseTimeoutMs, before, signal);
+    const startChat = () => startDeepSeekChat(page, config.chatUrl);
+    const send = (text: string) => sendDeepSeekPrompt(page, text);
+    const snapshotFn = () => snapshotDeepSeek(page);
+    const waitFn = (before: Awaited<ReturnType<typeof snapshotDeepSeek>>) => waitDeepSeekResponse(page, config.responseIdleMs, config.responseTimeoutMs, before, signal);
 
     await startChat();
     const projectContext = await buildProjectContext(cwd());
@@ -136,12 +128,6 @@ export async function askOnNewTab(
 ): Promise<string> {
   const page: Page = await browser.context.newPage();
   try {
-    if (config.provider === 'gemini') {
-      await startGeminiChat(page);
-      const before = await snapshotGemini(page);
-      await sendGeminiPrompt(page, prompt);
-      return waitGeminiResponse(page, config.responseIdleMs, config.responseTimeoutMs, before, signal);
-    }
     await startDeepSeekChat(page, config.chatUrl);
     const before = await snapshotDeepSeek(page);
     await sendDeepSeekPrompt(page, prompt);

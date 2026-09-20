@@ -12,7 +12,7 @@ export function buildProgram(): Command {
   const program = new Command();
   program
     .name('freegent')
-    .description('Autonomous coding and Windows computer agent with DeepSeek or Gemini providers')
+    .description('Autonomous coding and Windows computer agent powered by DeepSeek')
     .option('-v, --verbose', 'verbose logs')
     .option('-d, --debug', 'debug logs')
     .option('-p, --print', 'run one task, print result, and exit (no REPL)')

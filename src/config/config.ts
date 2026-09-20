@@ -3,19 +3,15 @@ import { join } from 'node:path';
 import { CONFIG_FILE, ensureRoot } from '../utils/paths.js';
 import { DEFAULTS } from './defaults.js';
 
-export type LLMProviderKind = 'deepseek' | 'gemini';
+export type LLMProviderKind = 'deepseek';
 
 export interface FreegentConfig {
-  /** Active reasoning provider. */
+  /** Active reasoning provider (DeepSeek only). */
   provider: LLMProviderKind;
   /** DeepSeek chat URL. */
   chatUrl: string;
-  /** Gemini web app URL. */
-  geminiUrl: string;
   /** Run the browser headless during agent runs (login is always headed). */
   headless: boolean;
-  /** Informational Gemini web model label; the actual model is selected by the Gemini web UI/account. */
-  geminiModel: string;
   /** Max autonomous agent iterations before stopping. */
   maxIterations: number;
   /** Milliseconds of silence that marks a response as complete. */
@@ -30,8 +26,6 @@ export interface FreegentConfig {
 export const DEFAULT_CONFIG: FreegentConfig = {
   provider: 'deepseek',
   chatUrl: 'https://chat.deepseek.com/',
-  geminiUrl: 'https://gemini.google.com/',
-  geminiModel: 'Gemini web',
   headless: true,
   maxIterations: DEFAULTS.agent.maxIterations,
   responseIdleMs: DEFAULTS.browser.responseIdleMs,
@@ -57,14 +51,10 @@ function normalizeConfig(input: Partial<FreegentConfig>): FreegentConfig {
   const responseIdleMs = Number(input.responseIdleMs ?? DEFAULT_CONFIG.responseIdleMs);
   const responseTimeoutMs = Number(input.responseTimeoutMs ?? DEFAULT_CONFIG.responseTimeoutMs);
   return {
-    provider: input.provider === 'gemini' ? 'gemini' : 'deepseek',
+    provider: 'deepseek',
     chatUrl: typeof input.chatUrl === 'string' && input.chatUrl.trim()
       ? input.chatUrl.trim() : DEFAULT_CONFIG.chatUrl,
-    geminiUrl: typeof input.geminiUrl === 'string' && input.geminiUrl.trim()
-      ? input.geminiUrl.trim() : DEFAULT_CONFIG.geminiUrl,
     headless: typeof input.headless === 'boolean' ? input.headless : DEFAULT_CONFIG.headless,
-    geminiModel: typeof input.geminiModel === 'string' && input.geminiModel.trim()
-      ? input.geminiModel.trim() : DEFAULT_CONFIG.geminiModel,
     maxIterations: Number.isFinite(maxIterations) && maxIterations >= 1
       ? Math.min(Math.floor(maxIterations), 1000) : DEFAULT_CONFIG.maxIterations,
     responseIdleMs: Number.isFinite(responseIdleMs) && responseIdleMs >= 100

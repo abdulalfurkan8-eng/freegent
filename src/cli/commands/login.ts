@@ -4,7 +4,6 @@ import { join } from 'node:path';
 import { loadConfig } from '../../config/config.js';
 import { openSession, type BrowserSession } from '../../browser/session.js';
 import { ensureLoggedIn as ensureDeepSeekLoggedIn, findComposer as findDeepSeekComposer } from '../../browser/deepseek.js';
-import { ensureLoggedIn as ensureGeminiLoggedIn, findComposer as findGeminiComposer, isGeminiLoggedIn } from '../../browser/gemini.js';
 import { startRemoteControl, remoteControlUrl } from '../../browser/remoteControl.js';
 import { isTermux } from '../../utils/platform.js';
 import { ROOT_DIR } from '../../utils/paths.js';
@@ -102,24 +101,14 @@ async function termuxLogin(session: BrowserSession): Promise<void> {
   logger.info(`Screenshot saved: ${shot2}`);
 }
 
-/** Open the browser and wait until the selected web provider is logged in. */
+/** Open the browser and wait until DeepSeek is logged in. */
 export async function loginCommand(opts: { remote?: boolean } = {}): Promise<void> {
   const config = await loadConfig();
-  const isGemini = config.provider === 'gemini';
-  const spinner = ora({ text: `Opening ${isGemini ? 'Gemini' : 'DeepSeek'} login...`, discardStdin: false }).start();
+  const spinner = ora({ text: 'Opening DeepSeek login...', discardStdin: false }).start();
   const session = await openSession(config, true);
   try {
     if (isTermux()) {
       spinner.stop();
-      if (isGemini) {
-        const already = await findGeminiComposer(session.page, 5_000).catch(() => null);
-        if (!already || !(await isGeminiLoggedIn(session.page))) {
-          throw new Error('Gemini web login cannot be completed headlessly here. Run `freegent login` on a PC and sign in to Google in the opened browser.');
-        }
-        await ensureGeminiLoggedIn(session.page);
-        logger.success('Gemini web session verified.');
-        return;
-      }
       const already = await findDeepSeekComposer(session.page, 5_000).catch(() => null);
       if (!already) await termuxLogin(session);
       const wait = ora({ text: 'Waiting for DeepSeek session (Ctrl+C to abort)...', discardStdin: false }).start();
@@ -141,21 +130,16 @@ export async function loginCommand(opts: { remote?: boolean } = {}): Promise<voi
       if (stop) stop();
       console.log('  Session saved.');
     } else {
-      spinner.text = `Please log into ${isGemini ? 'Gemini' : 'DeepSeek'} in the opened browser window...`;
-      if (isGemini) {
-        await ensureGeminiLoggedIn(session.page);
-        spinner.succeed('Gemini web logged in. Session saved for future runs.');
-      } else {
-        await ensureDeepSeekLoggedIn(session.page);
-        spinner.succeed('Logged in! You have 30 seconds to enable Search / DeepThink in the browser.');
-        for (let t = 30; t > 0; t--) {
-          process.stdout.write('\r  Saving session in ' + t + 's... (click Search / DeepThink now)  ');
-          await new Promise((r) => setTimeout(r, 1000));
-        }
-        process.stdout.write('\r  Session saved.                                          \n');
+      spinner.text = 'Please log into DeepSeek in the opened browser window...';
+      await ensureDeepSeekLoggedIn(session.page);
+      spinner.succeed('Logged in! You have 30 seconds to enable Search / DeepThink in the browser.');
+      for (let t = 30; t > 0; t--) {
+        process.stdout.write('\r  Saving session in ' + t + 's... (click Search / DeepThink now)  ');
+        await new Promise((r) => setTimeout(r, 1000));
       }
+      process.stdout.write('\r  Session saved.                                          \n');
     }
-    logger.info(`Future freegent runs will reuse this ${isGemini ? 'Gemini web' : 'DeepSeek'} login session.`);
+    logger.info('Future freegent runs will reuse this DeepSeek login session.');
   } finally {
     await session.close();
   }
