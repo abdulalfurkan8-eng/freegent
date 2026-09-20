@@ -1,0 +1,20 @@
+cursor-goal-mode
+Copyright 2026 wangye520
+
+This project ports the GOAL mode design of OpenAI Codex to the Cursor IDE.
+
+The prompt templates under extracted/ (continuation.md, budget_limit.md,
+objective_updated.md) are reproduced from the OpenAI Codex repository
+(https://github.com/openai/codex), licensed under the Apache License 2.0.
+The architecture notes under extracted/ describe that same codebase
+(crate codex-rs/ext/goal).
+
+The Cursor skill under skill/codex-goal/ is a derivative work that adapts
+those templates and the goal state machine to Cursor's agent runtime.
+
+The Cursor skill under skill/computer-use/ is a derivative work that
+reimplements the Codex Computer Use action space (the @oai/sky full-desktop
+API: screenshot/click/move/drag/press_key/scroll/type_text) on Cursor
+primitives. The Windows executor scripts/cua.ps1 is original code (Win32
+P/Invoke) authored for this project; the action space and naming are from
+OpenAI Codex.

@@ -1,0 +1,13 @@
+node_modules/
+dist/
+.playwright/
+.freegent/
+*.log
+.DS_Store
+coverage/
+app/desktop/node_modules/
+app/desktop/dist/
+app/android/build/
+app/android/app/build/
+app/android/.gradle/
+app/android/local.properties

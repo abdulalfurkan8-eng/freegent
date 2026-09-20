@@ -1,0 +1,1 @@
+export function redactSecrets(text:string): string { return text.replace(/(api[_-]?key|token|password|secret|authorization)\s*[:=]\s*[^\s,;]+/gi,'$1=[REDACTED]').replace(/Bearer\s+[A-Za-z0-9._-]+/gi,'Bearer [REDACTED]'); }

@@ -1,0 +1,17 @@
+import http from 'node:http';
+import os from 'node:os';
+import { randomBytes, timingSafeEqual } from 'node:crypto';
+import type { Page } from 'playwright';
+function localIp(): string { for (const ifaces of Object.values(os.networkInterfaces())) for (const i of ifaces ?? []) if (i.family === 'IPv4' && !i.internal) return i.address; return '127.0.0.1'; }
+const HTML = (base: string) => `<!DOCTYPE html><html><head><meta name="viewport" content="width=device-width,initial-scale=1"><title>FreeGent Remote</title><style>*{box-sizing:border-box}body{margin:0;background:#0a0a0a;color:#fff;font-family:monospace}#bar{position:fixed;top:0;left:0;right:0;background:#0d1117;padding:8px 12px;color:#7cb3ff;z-index:9}#wrap{margin-top:38px}#s{width:100%;display:block;cursor:crosshair}</style></head><body><div id="bar">FreeGent Remote</div><div id="wrap"><img id="s" src="${base}/shot"></div><script>const base=${JSON.stringify(base)};const img=document.getElementById('s');let busy=false;async function refresh(){if(busy)return;busy=true;const r=await fetch(base+'/shot?t='+Date.now()).catch(()=>null);if(r&&r.ok){const b=await r.blob();img.src=URL.createObjectURL(b)}busy=false}setInterval(refresh,1200);img.onclick=async e=>{const r=img.getBoundingClientRect();await fetch(base+'/tap',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({px:(e.clientX-r.left)/r.width,py:(e.clientY-r.top)/r.height})});setTimeout(refresh,350)};</script></body></html>`;
+function authPath(token:string, path:string): string { return `/remote/${token}${path}`; }
+export async function startRemoteControl(page: Page, port = 7070, remote = false): Promise<{ stop:()=>Promise<void>; token:string; url:string }> {
+  const token = randomBytes(24).toString('hex'); const host = remote ? localIp() : '127.0.0.1'; const base = `http://${host}:${port}${authPath(token, '')}`; const vp = page.viewportSize() ?? { width:1280,height:720 };
+  const server=http.createServer((req,res)=>{ const raw=req.url??'/'; const match=raw.match(/^\/remote\/([^/]+)(.*)$/); const presented=match?.[1]??''; let authorized=false; try { const a=Buffer.from(presented); const b=Buffer.from(token); authorized=a.length===b.length && timingSafeEqual(a,b); } catch { authorized=false; } if(!authorized){res.writeHead(404);res.end('Not found');return;} const path=match?.[2]||'/';
+    if(path.startsWith('/shot')){void page.screenshot({type:'jpeg',quality:70}).then(buf=>{res.writeHead(200,{'Content-Type':'image/jpeg','Cache-Control':'no-cache'});res.end(buf)}).catch(()=>{res.writeHead(500);res.end()});return;}
+    if(path==='/tap'&&req.method==='POST'){let body='';req.on('data',(d:Buffer)=>{body+=d.toString();if(body.length>2048)req.destroy()});req.on('end',async()=>{try{const {px,py}=JSON.parse(body) as {px:number;py:number};if(!Number.isFinite(px)||!Number.isFinite(py)||px<0||px>1||py<0||py>1)throw new Error('invalid coordinates');await page.mouse.click(Math.round(px*vp.width),Math.round(py*vp.height));res.writeHead(200);res.end('ok')}catch{res.writeHead(400);res.end('bad request')}});return;}
+    res.writeHead(200,{'Content-Type':'text/html; charset=utf-8'});res.end(HTML(base)); });
+  await new Promise<void>((resolve,reject)=>{server.on('error',reject);server.listen(port,host,resolve)});
+  return { stop:()=>new Promise(r=>server.close(()=>r())), token, url:base };
+}
+export function remoteControlUrl(port=7070, token='', remote=false): string { return `http://${remote?localIp():'127.0.0.1'}:${port}${authPath(token,'')}`; }
