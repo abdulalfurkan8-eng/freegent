@@ -1,6 +1,6 @@
 {
   "name": "freegent",
-  "version": "7.4.19",
+  "version": "1.0.0",
   "description": "Autonomous AI coding and Windows computer-control agent with DeepSeek and Gemini web providers",
   "type": "module",
   "bin": {
