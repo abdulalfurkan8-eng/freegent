@@ -82,7 +82,7 @@ Custom commands: drop a `.freegent/commands/<name>.md` file in a project and it 
 
 ```powershell
 freegent init                 # initialize ~/.freegent
-freegent login [--remote]     # log into the selected provider
+freegent login [--remote]     # log into DeepSeek
 freegent logout               # remove the saved session
 freegent doctor               # diagnose setup problems
 freegent worktree <name>      # create a git worktree for a parallel session
