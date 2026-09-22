@@ -9,6 +9,10 @@ Autonomous AI coding and Windows computer-control agent, driven by DeepSeek thro
 ╰─────────────────────────────────────────────────────────────╯
 ```
 
+[![Watch the demo](assets/freegent-demo-preview.gif)](assets/freegent-demo.mp4)
+
+*Click the preview for the full video with audio (made entirely by FreeGent itself, using its own `/brag` skill).*
+
 ## What it does
 
 FreeGent runs an agent loop against DeepSeek's web chat (via a persistent Playwright browser profile), giving it tools to read/write files, run terminal commands, browse and test pages, control the Windows desktop (screenshots, clicks, keyboard), and remember facts across sessions - all through natural-language tasks from your terminal.
