@@ -9,9 +9,9 @@ Autonomous AI coding and Windows computer-control agent, driven by DeepSeek thro
 ╰─────────────────────────────────────────────────────────────╯
 ```
 
-[![Watch the demo](assets/freegent-demo-preview.gif)](assets/freegent-demo.mp4)
+[![Watch the demo](https://img.youtube.com/vi/slKqC-YslTc/maxresdefault.jpg)](https://youtu.be/slKqC-YslTc)
 
-*Click the preview for the full video with audio (made entirely by FreeGent itself, using its own `/brag` skill).*
+*Click to watch the demo on YouTube (made entirely by FreeGent itself, using its own `/brag` skill).*
 
 ## What it does
 
