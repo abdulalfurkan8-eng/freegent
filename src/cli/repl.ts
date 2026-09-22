@@ -20,6 +20,8 @@ import { runResearch } from '../commands/research.js';
 import { runBossMode } from '../agent/boss.js';
 import { listSkills, readSkill, runSkillCreate, runSkillUpdate, runSkillPipeline, deleteSkill } from '../commands/skill.js';
 import { listMcps, printMcpList, setMcpEnabled, deleteMcp, runMcpCreate } from '../commands/mcp.js';
+import { setConfirmHandler } from '../utils/confirm.js';
+import { pauseActiveSpinnerForPrompt, resumeActiveSpinnerAfterPrompt } from '../utils/spinnerRegistry.js';
 
 /** Load a custom command from .freegent/commands/<name>.md, if present. */
 async function loadCustomCommand(name: string, args: string): Promise<string | null> {
@@ -190,6 +192,20 @@ export async function startRepl(initialTask?: string): Promise<void> {
   const expandPastes = (line: string): string => pasteHandler.expand(line);
 
   const rl = readline.createInterface({ input: filtered, output: process.stdout, terminal: true });
+  // Route confirm() prompts through THIS SAME readline interface instead of
+  // letting it create its own on raw process.stdin - two readline interfaces
+  // fighting over stdin (one filtered+raw-mode-owning here, one naive) is
+  // what broke typing/Ctrl+C after any prompt during a task.
+  setConfirmHandler((question) => {
+    const wasSpinning = pauseActiveSpinnerForPrompt();
+    return new Promise<boolean>((resolve) => {
+      rl.question(chalk.yellow(`\n? ${question} `) + chalk.dim('(y/N) '), (answer) => {
+        resumeActiveSpinnerAfterPrompt(wasSpinning);
+        const normalized = answer.trim().toLowerCase();
+        resolve(normalized === 'y' || normalized === 'yes');
+      });
+    });
+  });
   let busy = false;
   let sigints = 0;
   let closed = false;
