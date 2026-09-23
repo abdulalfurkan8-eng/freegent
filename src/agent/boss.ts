@@ -23,7 +23,7 @@ export async function runBossMode(
 ): Promise<BossResult> {
   const start = Date.now();
   console.log(chalk.blue('\n BOSS: ' + task.slice(0, 80)));
-  console.log(chalk.blue('─'.repeat(80)) + '\n');
+  console.log(chalk.blue('\u2500'.repeat(80)) + '\n');
 
   // Boss creates simple step-by-step plan
   const planPrompt = `You are the senior planner for a software/computer agent. Analyze this task before execution.
@@ -78,7 +78,7 @@ Do not invent files, APIs, or test commands; the executor will discover them. Pr
   // Execute steps one by one
   console.log(chalk.green(`PLAN ${steps.length} steps:\n`));
   steps.forEach((s, i) => console.log(chalk.dim(`  ${i + 1}. ${s}`)));
-  console.log(chalk.blue('─'.repeat(80)) + '\n');
+  console.log(chalk.blue('\u2500'.repeat(80)) + '\n');
 
   const results: string[] = [];
   let failures = 0;
@@ -100,11 +100,11 @@ Do not invent files, APIs, or test commands; the executor will discover them. Pr
   }
 
   // Summary
-  console.log(chalk.blue('─'.repeat(80)));
+  console.log(chalk.blue('\u2500'.repeat(80)));
   console.log(failures === 0
     ? chalk.green(`OK All ${steps.length} steps completed!`)
     : chalk.yellow(`WARN  ${failures} step(s) failed`));
-  console.log(chalk.blue('─'.repeat(80)) + '\n');
+  console.log(chalk.blue('\u2500'.repeat(80)) + '\n');
 
   return {
     summary: failures === 0 ? 'All steps completed' : `${failures} steps failed`,
