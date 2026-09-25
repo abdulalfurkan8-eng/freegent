@@ -180,9 +180,7 @@ export async function runCommandTool(
     cwd: ctx.cwd,
     shell: true,
     reject: false,
-    timeout: timeoutMs,
     all: true,
-    forceKillAfterDelay: 2000,
   });
   const killTree = (): void => {
     if (!child.pid) return;
@@ -195,14 +193,24 @@ export async function runCommandTool(
   const onAbort = () => killTree();
   ctx.signal?.addEventListener('abort', onAbort, { once: true });
 
+  // Enforce the timeout ourselves with the SAME tree-kill used for user
+  // cancellation, instead of execa's own `timeout` option: on Windows with
+  // shell:true, execa's built-in timeout only signals the cmd.exe wrapper -
+  // it does not kill the wrapper's children, so the real work (e.g. a
+  // python.exe grandchild) survives as an orphan and keeps running past the
+  // supposed timeout, invisible to the agent.
+  let timedOut = false;
+  const timeoutHandle = setTimeout(() => { timedOut = true; killTree(); }, timeoutMs);
+
   const stopTimer = startCommandTimer(command, timeoutMs);
   try {
     const result = await child;
     stopTimer();
+    clearTimeout(timeoutHandle);
     if (ctx.signal?.aborted) return fail('Command killed: task interrupted by user.');
     const out = (result.all ?? '').toString().slice(0, 12_000);
     const parts = [`exit code: ${result.exitCode}`];
-    if (result.timedOut) {
+    if (timedOut) {
       parts.push(
         `[stopped automatically after ${Math.round(timeoutMs / 1000)}s timeout - ` +
           `command was still running. Re-run with a longer "timeout" (max 600s/10m), ` +
@@ -211,12 +219,14 @@ export async function runCommandTool(
     }
     if (out) parts.push(`output:\n${out}`);
     const output = parts.join('\n');
-    return result.exitCode === 0 && !result.timedOut ? ok(output) : fail(output);
+    return result.exitCode === 0 && !timedOut ? ok(output) : fail(output);
   } catch (err) {
+    clearTimeout(timeoutHandle);
     if (ctx.signal?.aborted) return fail('Command killed: task interrupted by user.');
     return fail(`run_command failed: ${(err as Error).message}`);
   } finally {
     stopTimer();
+    clearTimeout(timeoutHandle);
     ctx.signal?.removeEventListener('abort', onAbort);
   }
 }
